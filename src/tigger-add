@@ -1,0 +1,31 @@
+#!/bin/dash
+
+if [ ! -d ".tigger" ]
+then
+	echo "$0: error: tigger repository directory .tigger not found"
+	exit 0
+else 
+	cd ".tigger" || exit
+fi
+
+if [ ! -d "index" ]
+then
+	mkdir "index"
+fi
+cd ".."
+
+for file in "$@"
+do
+	if [ -f "$file" ]
+	then
+		cp "$file" ".tigger/index"
+	elif [ ! -f "$file" ] && [ -f ".tigger/index/$file" ]
+	then 
+		rm ".tigger/index/$file"
+	else 
+		echo "$0: error: can not open '$file'"
+	fi
+done
+
+
+	
