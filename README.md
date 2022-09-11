@@ -14,7 +14,7 @@ Tigger replicates the git controls:
 ```
 ./tigger-add [path-to-file/s]
 ```
-* commit - commits a file 
+* commit -m - commits a file with a message
 ```
 ./tigger-commit [-a] -m [message] [path-to-file/s]
 ```
