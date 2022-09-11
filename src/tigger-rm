@@ -1,0 +1,169 @@
+#!/bin/dash
+
+#tigger-rm removes a file from the index, 
+#or from the current directory and the index.
+
+#If the --cached option is specified, 
+#the file is removed only from the index, and not from the current directory.
+
+#tigger-rm, like git rm, should stop the user accidentally losing work, 
+#and should give an error message instead if the removal would cause the user to lose work. 
+#You will need to experiment with the reference implementation to 
+#discover these error messages. Researching git rm's behaviour may also help.
+
+#The --force option overrides this, and will carry out 
+#the removal even if the user will lose work.
+
+#variations:
+#tigger-rm filenames - remove from index and cwd - error messages
+#tigger-rm -cached filenames - remove from index - error messages
+#tigger-rm -forced filenames - remove from index and cwd WITHOUT error messages
+#tigger-rm -forced -cached filenames - remove from index WITHOUT error messages
+
+#tigger-rm: error: 'x' in the repository is different to the working file
+	#changes to a file have been added and committed
+	#changes made to file again and not added or commited
+
+#tigger-rm: error: 'x' in index is different to both the working file and the repository
+	#changes to a file/s have been added
+	#not commited
+	#file/s has been changed in the working directory again
+
+#tigger-rm: error: 'x' has staged changes in the index
+	#changes to a file/s have been added
+	#not comitted
+
+#tigger-rm: error: 'x' is not in the tigger repository
+	#a file has not been commited at all 
+
+#consider all these cases!!!!
+
+#up to date checks 
+
+#tigger-rm with the force option
+if [ "$1" = "--force" ]
+then 
+	if [ "$2" = "--cached" ]
+	then 
+		for file in "$@"
+		do 
+			if [ "$file" = "--force" ] || [ "$file" = "--cached" ]
+			then 
+				continue
+			else 
+				if [ -f "$file" ] && [ ! -f ".tigger/$file" ] && [ ! -f ".tigger/index/$file" ]
+				then 
+					echo "$0: error: '$file' is not in the tigger repository"
+				elif [ ! -f "$file" ] && [ -f ".tigger/$file" ] && [ ! -f ".tigger/index/$file" ]
+				then
+					echo "$0: error: '$file' is not in the tigger repository"
+				elif [ -f "$file" ] && [ -f ".tigger/$file" ] && [ ! -f ".tigger/index/$file" ]
+				then
+					echo "$0: error: '$file' is not in the tigger repository"
+				else 
+					rm ".tigger/index/$file"
+				fi
+			fi
+		done
+	else 
+		for file in "$@"
+		do 
+			if [ "$file" = "--force" ] 
+			then 
+				continue
+			else 
+				if [ -f "$file" ] && [ ! -f ".tigger/$file" ] && [ ! -f ".tigger/index/$file" ]
+				then 
+					echo "$0: error: '$file' is not in the tigger repository"
+				elif [ ! -f "$file" ] && [ -f ".tigger/$file" ] && [ ! -f ".tigger/index/$file" ]
+				then
+					echo "$0: error: '$file' is not in the tigger repository"
+				elif [ -f "$file" ] && [ -f ".tigger/$file" ] && [ ! -f ".tigger/index/$file" ]
+				then
+					echo "$0: error: '$file' is not in the tigger repository"
+				else
+					rm ".tigger/index/$file"
+					rm "$file"
+				fi
+			fi
+		done
+
+	fi
+#tigger-rm without the --force option
+elif [ "$1" = "--cached" ]
+then 
+	for file in "$@"
+	do
+		if [ "$file" = "--cached" ]
+		then 
+			continue
+		else
+			if [ -f "$file" ] && [ ! -f ".tigger/$file" ] && [ ! -f ".tigger/index/$file" ]
+			then 
+				echo "$0: error: '$file' is not in the tigger repository"
+			elif [ ! -f "$file" ] && [ -f ".tigger/$file" ] && [ ! -f ".tigger/index/$file" ]
+			then
+				echo "$0: error: '$file' is not in the tigger repository"
+			elif [ -f "$file" ] && [ -f ".tigger/$file" ] && [ ! -f ".tigger/index/$file" ]
+			then
+				echo "$0: error: '$file' is not in the tigger repository"
+			elif cmp -s "$file" ".tigger/index/$file" && [ ! -f ".tigger/$file" ]
+			then 
+				rm ".tigger/index/$file"
+			elif cmp -s "$file" ".tigger/index/$file" && cmp -s ".tigger/index/$file" ".tigger/$file"
+			then 
+				rm ".tigger/index/$file"
+			elif cmp -s ".tigger/index/$file" ".tigger/$file" && ! cmp -s ".tigger/index/$file" "$file" 
+			then 
+				rm ".tigger/index/$file"
+			elif cmp -s "$file" ".tigger/index/$file" && ! cmp -s ".tigger/index/$file" ".tigger/$file" 
+			then 
+				rm ".tigger/index/$file"
+			elif cmp -s "$file" ".tigger/$file" && ! cmp -s ".tigger/$file" ".tigger/index/$file" 
+			then 
+				rm ".tigger/index/$file"
+			else
+				echo "$0: error: '$file' in index is different to both the working file and the repository"
+			fi
+		fi 	
+	done
+else 
+	for file in "$@"
+	do
+		if [ -f "$file" ] && [ ! -f ".tigger/$file" ] && [ ! -f ".tigger/index/$file" ]
+		then 
+			echo "$0: error: '$file' is not in the tigger repository"
+		elif [ ! -f "$file" ] && [ -f ".tigger/$file" ] && [ ! -f ".tigger/index/$file" ]
+		then
+			echo "$0: error: '$file' is not in the tigger repository"
+		elif [ -f "$file" ] && [ -f ".tigger/$file" ] && [ ! -f ".tigger/index/$file" ]
+		then
+			echo "$0: error: '$file' is not in the tigger repository"
+		elif cmp -s "$file" ".tigger/index/$file" && [ ! -f ".tigger/$file" ]
+		then 
+			echo "$0: error: '$file' has staged changes in the index"
+		elif cmp -s "$file" ".tigger/index/$file" && cmp -s ".tigger/index/$file" ".tigger/$file"
+		then 
+			rm ".tigger/index/$file"
+			rm "$file"
+		elif cmp -s ".tigger/index/$file" ".tigger/$file" && ! cmp -s ".tigger/index/$file" "$file"
+		then 
+			echo "$0: error: '$file' in the repository is different to the working file"
+		elif cmp -s "$file" ".tigger/index/$file" && ! cmp -s ".tigger/index/$file" ".tigger/$file" 
+		then 
+			echo "$0: error: '$file' has staged changes in the index"
+		elif cmp -s "$file" ".tigger/$file" && ! cmp -s ".tigger/$file" ".tigger/index/$file" 
+		then 
+			echo "$0: error: '$file' in index is different to both the working file and the repository"
+		else
+			echo "$0: error: '$file' in index is different to both the working file and the repository"
+		fi	
+	done
+fi
+
+
+
+
+
+
+

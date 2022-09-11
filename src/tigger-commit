@@ -1,0 +1,103 @@
+#!/bin/dash
+
+#copy all files in index into the repository 
+#if files already exists copy new files and replace same files
+
+#num_commits=-1
+#every time a commit is made, add 1 -> need to find a way to keep track of this somehow
+
+#one way:
+	#save (or replace and save) the files in the index to the repository 
+	#save the files in the index to a tigger history folder 
+	#this tigger history folder will have multiple subdirectories in it
+	#e.g.
+	#tigger history
+		# tigger-commit-0 - use the name of this directory as what is outputed when the commit is done
+			#file containing commit message 
+			#current files in the index
+		# tigger commit 1
+			#file containing commit message
+			#current files in the index
+		# tigger commit 2
+			#file containing commit message
+			#current files in the index
+
+#subset 1 part 
+	#tigger-commit can have a -a option, which causes all 
+	#files already in the index to have their contents from 
+	#the current directory added to the index before the commit.
+
+#if files already in index have been modified
+#-a command should change all those files in index and copy to repo 
+#and create a new commit 
+
+if [ ! -d ".tigger/tigger-history" ]
+then
+	mkdir ".tigger/tigger-history"
+fi
+
+#subset1 commit -a implemented here
+listindex=$(ls .tigger/index)
+indexfiles=$(find .tigger/index -maxdepth 1 -type f | cut -d'/' -f3 | wc -l)
+if [ "$indexfiles" -ge 1 ]
+then 
+	if [ "$1" = "-a" ]
+	then
+		for file in $listindex
+		do
+			numdiffs=$(diff ".tigger/index/$file" "$file" | wc -l)
+			if [ "$numdiffs" -gt 0 ]
+			then 
+				cp "$file" ".tigger/index/$file"
+			fi
+		done
+	fi
+fi
+
+for file in $listindex
+do
+	cp ".tigger/index/$file" ".tigger"
+done
+
+#check repo
+findintigger=$(find .tigger -maxdepth 1 -type f | cut -d'/' -f2)
+for file in $findintigger
+do 
+	if [ ! -f ".tigger/index/$file" ]
+	then 
+		rm ".tigger/$file"
+	fi
+done
+
+hisdir=".tigger/tigger-history"
+
+commitnum=$(find $hisdir -mindepth 1 -type d | cut -d'/' -f3 | wc -l)
+
+#if there is nothing to commit
+prevcommit=$((commitnum-1))
+if [ -d "$hisdir/tigger-commit-$prevcommit" ]
+then
+	comp=$(diff -r "$hisdir/tigger-commit-$prevcommit" ".tigger/index" | wc -l)
+	if [ "$comp" = 1 ]
+	then
+		echo "nothing to commit"
+		exit
+	fi
+fi
+
+#accounting for -a
+mkdir "$hisdir/tigger-commit-$commitnum"
+commitdir="$hisdir/tigger-commit-$commitnum"
+if [ "$1" != "-a" ]
+then
+	echo "$2" > "$commitdir/message"
+else
+	echo "$3" > "$commitdir/message"
+fi
+
+for file in $listindex
+do
+	cp ".tigger/index/$file" "$commitdir"
+done
+echo "Committed as commit $commitnum"
+

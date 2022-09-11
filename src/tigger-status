@@ -1,0 +1,105 @@
+#!/bin/dash
+
+#tigger-status shows the status of files in the current directory, the index, and the repository.
+
+#create a temp directory to whole all possible files (files in cwd & repo & index)
+#DO NOT DUPLICATE 
+
+cwdfiles=$(find . -maxdepth 1 -type f | cut -d'/' -f2 | grep -v ".tigger" | sort)
+tiggerFiles=$(find .tigger -maxdepth 1 -type f | cut -d'/' -f2 | sort)
+indexFiles=$(find .tigger/index -maxdepth 1 -type f | cut -d'/' -f3 | sort)
+
+tmpdir=$(mktemp -d "getallfiles.XXX")
+
+for item in $cwdfiles
+do 
+	cp "$item" "$tmpdir"
+done
+
+for jtem in $indexFiles
+do 
+	#avoiding duplication
+	if [ ! -f "$tmpdir/$jtem" ]
+	then 
+		cp ".tigger/index/$jtem" "$tmpdir"
+	else 
+		continue
+	fi
+done
+
+for ktem in $tiggerFiles
+do
+	#avoiding duplication
+	if [ ! -f "$tmpdir/$ktem" ]
+	then 
+		cp ".tigger/$ktem" "$tmpdir"
+	else 
+		continue
+	fi
+done
+
+tmpdirlist=$(find "$tmpdir" -maxdepth 1 -type f | cut -d'/' -f2 | sort)
+
+for file in $tmpdirlist
+do 
+	#if file exists in cwd
+	if [ -f "$file" ]
+	then
+		#if repo & cwd & index all exist
+		if [ -f ".tigger/$file" ] && [ -f ".tigger/index/$file" ]
+		then
+			#if (repo & cwd & index are all different)
+			if ! cmp -s "$file" ".tigger/$file" && ! cmp -s ".tigger/index/$file" ".tigger/$file" && ! cmp -s "$file" ".tigger/index/$file"
+			then 
+				echo "$file - file changed, different changes staged for commit"
+			#if (cwd & index are the same but repo is different)
+			elif cmp -s "$file" ".tigger/index/$file" && ! cmp -s ".tigger/$file" ".tigger/index/$file" 
+			then 
+				echo "$file - file changed, changes staged for commit"
+			#if (repo & index are same but cwd is different)
+			elif cmp -s ".tigger/index/$file" ".tigger/$file" && ! cmp -s ".tigger/index/$file" "$file"
+			then 
+				echo "$file - file changed, changes not staged for commit"
+			#if (repo & index & cwd are all same)
+			elif cmp -s "$file" ".tigger/$file" && cmp -s ".tigger/index/$file" ".tigger/$file" && cmp -s "$file" ".tigger/index/$file"
+			then
+				echo "$file - same as repo"
+			fi
+		#if cwd and index exist but not repo
+		elif [ -f ".tigger/index/$file" ] && [ ! -f ".tigger/$file" ]
+		then
+			if ! cmp -s ".tigger/index/$file" "$file"
+			then 	
+				echo "$file - added to index, file changed"
+			else 
+				echo "$file - added to index"
+			fi
+		#if (exists in cwd but not repo or index)
+		elif [ ! -f ".tigger/index/$file" ] && [ ! -f ".tigger/$file" ]
+		then 
+			echo "$file - untracked"
+		#if exists in cwd and repo but not index
+		elif [ -f ".tigger/$file" ] && [ ! -f ".tigger/index/$file" ]
+		then
+			echo "$file - untracked"
+		fi
+	#if file doesnt exist in cwd
+	else 
+		#if (cwd doesnt exist but repo and index do)
+		if [ -f ".tigger/$file" ] && [ -f ".tigger/index/$file" ]
+		then 
+			echo "$file - file deleted"
+		#if (cwd and index doesn't exist but repo does)
+		elif [ ! -f ".tigger/index/$file" ] && [ -f ".tigger/$file" ]
+		then 
+			echo "$file - deleted"
+		#if cwd and repo doesn't exist but index does
+		elif [ ! -f ".tigger/$file" ] && [ -f ".tigger/index/$file" ]
+		then 
+			echo "$file - added to index, file deleted"
+		fi
+	fi
+done
+
+#remove temp directory
+rm -r "$tmpdir"

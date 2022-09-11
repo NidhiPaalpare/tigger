@@ -1,0 +1,36 @@
+#!/bin/dash
+
+#The tigger-show should print the contents of the specified filename 
+#as of the specified commit. If commit is omitted, the contents of the 
+#file in the index should be printed.
+#You can assume the commit if specified will be a non-negative integer.
+
+commit=$(echo "$1" | cut -d':' -f1)
+file=$(echo "$1" | cut -d':' -f2)
+
+if [ "$commit" ]
+then 
+
+	if [ -d ".tigger/tigger-history/tigger-commit-$commit" ]
+	then
+		dirpath=".tigger/tigger-history/tigger-commit-$commit"
+		if [ -f "$dirpath/$file" ]
+		then
+			contents=$(cat "$dirpath/$file")
+			echo "$contents"
+		else
+			echo "$0: error: '$file' not found in commit $commit"
+		fi
+	else 
+		echo "$0: error: unknown commit '$commit'"
+	fi
+else 
+	#print index files
+	if [ -f ".tigger/index/$file" ]
+	then
+		indcontents=$(cat ".tigger/index/$file")
+		echo "$indcontents"
+	else 
+		echo "$0: error: '$file' not found in index"
+	fi
+fi

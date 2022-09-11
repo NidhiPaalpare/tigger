@@ -1,0 +1,24 @@
+#!/bin/dash
+
+#The tigger-log command prints a line for every commit 
+#made to the repository: each line should contain the 
+#commit number and the commit message
+
+numdirs=$(find .tigger/tigger-history -mindepth 1 -type d | cut -d'/' -f3 | wc -l)
+
+i=$((numdirs-1))
+
+#loop backwards
+while [ "$i" -ge 0 ]
+do
+	if [ -d ".tigger/tigger-history/tigger-commit-$i" ]
+	then
+		comdir=".tigger/tigger-history/tigger-commit-$i"
+		if [ -f "$comdir/message" ]
+		then
+			commessage=$(cat "$comdir/message")
+			echo "$i $commessage"
+		fi
+	fi
+	i=$((i-1))
+done

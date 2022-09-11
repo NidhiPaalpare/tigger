@@ -1,0 +1,11 @@
+#!/bin/dash
+
+#create repo
+
+if [ -e ".tigger" ] && [ -d ".tigger" ]
+then
+	echo "$0: error: .tigger already exists"
+else 
+	mkdir ".tigger"
+	echo "Initialized empty tigger repository in .tigger"
+fi
